@@ -26,6 +26,8 @@ public sealed class AppDbContext : DbContext
             b.Property(x => x.CreatedBy).HasMaxLength(100);
             b.Property(x => x.UpdatedBy).HasMaxLength(100);
             b.Property(x => x.RawRequestJson).HasColumnType("nvarchar(max)");
+            b.Property(x => x.Status).HasMaxLength(20).HasDefaultValue("Active").IsRequired();
+
         });
     }
 }

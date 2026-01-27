@@ -12,7 +12,7 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
 
     private static readonly HashSet<string> AllowedGender = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Male", "Female", "Other"
+        "Male", "Female", "Other", "Do not prefer to disclose"
     };
 
     private static readonly HashSet<string> AllowedWorkLocationType = new(StringComparer.OrdinalIgnoreCase)
@@ -22,12 +22,12 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
 
     private static readonly HashSet<string> AllowedPayrollCycle = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Monthly", "Weekly", "BiWeekly"
+        "Monthly", "Annually"
     };
 
     private static readonly HashSet<string> AllowedEmployeeType = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Contract", "Permanent", "Intern"
+        "Third Party", "Permanent", "Intern"
     };
 
     public PreOnboardingRequestValidator()
@@ -75,7 +75,7 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
         RuleFor(x => x.Gender)
             .Must(v => string.IsNullOrWhiteSpace(v) || AllowedGender.Contains(v))
             .WithErrorCode("INVALID_ENUM")
-            .WithMessage("gender is invalid. Allowed: Male/Female/Other.");
+            .WithMessage("gender is invalid. Allowed: Male/Female/Other/Do not prefer to disclose.");
 
         RuleFor(x => x.Nationality)
             .MaximumLength(50).WithErrorCode("MAX_LENGTH").WithMessage("nationality max length is 50.")
@@ -114,7 +114,7 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
             RuleFor(x => x.Job!.Employee_Type)
                 .Must(v => string.IsNullOrWhiteSpace(v) || AllowedEmployeeType.Contains(v))
                 .WithErrorCode("INVALID_ENUM")
-                .WithMessage("job.employee_type is invalid. Allowed: Contract/Permanent/Intern.");
+                .WithMessage("job.employee_type is invalid. Allowed: Third Party/Permanent/Intern.");
         });
 
         When(x => x.Pay is not null, () =>
@@ -136,7 +136,7 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
                 .When(x => !string.IsNullOrWhiteSpace(x.Kyc!.Pan));
 
             RuleFor(x => x.Kyc!.Aadhaar_Last4)
-                .Matches(@"^\d{4}$").WithErrorCode("INVALID_AADHAAR_LAST4").WithMessage("kyc.aadhaar_last4 must be 4 digits.")
+                .Matches(@"^\d{12}$").WithErrorCode("INVALID_AADHAAR_LAST4").WithMessage("kyc.aadhaar_last4 must be 12 digits.")
                 .When(x => !string.IsNullOrWhiteSpace(x.Kyc!.Aadhaar_Last4));
         });
 

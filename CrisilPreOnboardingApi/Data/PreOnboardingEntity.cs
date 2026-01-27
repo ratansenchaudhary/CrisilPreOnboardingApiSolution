@@ -1,4 +1,4 @@
-namespace CrisilPreOnboardingApi.Data;
+﻿namespace CrisilPreOnboardingApi.Data;
 
 public sealed class PreOnboardingEntity
 {
@@ -29,4 +29,5 @@ public sealed class PreOnboardingEntity
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
     public string? RawRequestJson { get; set; }
+    public string Status { get; set; } = "Active"; // ✅ NEW
 }

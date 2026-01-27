@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CrisilPreOnboardingApi.Contracts;
 using CrisilPreOnboardingApi.Data;
 using CrisilPreOnboardingApi.Models;
@@ -60,31 +60,52 @@ public sealed class PreOnboardingController : ControllerBase
             if (rawRequestJson.Length > 20000) rawRequestJson = rawRequestJson[..20000] + "...(truncated)";
         }
 
-        var entity = new PreOnboardingEntity
-        {
-            ExternalCandidateId = request.External_Candidate_Id!,
-            CrisilOfferId = request.Crisil_Offer_Id!,
-            JoiningStatus = request.Joining_Status,
-            JoiningDate = request.Joining_Date!.Value,
-            FirstName = request.First_Name!,
-            LastName = request.Last_Name!,
-            DateOfBirth = request.Date_Of_Birth!.Value,
-            Gender = request.Gender,
-            Nationality = request.Nationality,
-            PersonalEmail = request.Personal_Email!,
-            MobileCountryCode = request.Mobile_Country_Code,
-            MobileNumber = request.Mobile_Number!,
-            AddressJson = request.Address is null ? null : JsonSerializer.Serialize(request.Address),
-            JobJson = request.Job is null ? null : JsonSerializer.Serialize(request.Job),
-            PayJson = request.Pay is null ? null : JsonSerializer.Serialize(request.Pay),
-            KycJson = request.Kyc is null ? null : JsonSerializer.Serialize(request.Kyc),
-            EmergencyContactJson = request.Emergency_Contact is null ? null : JsonSerializer.Serialize(request.Emergency_Contact),
-            RawRequestJson = rawRequestJson,
-            CreatedBy = Request.Headers[_config["Auth:CompanyCodeHeaderName"] ?? "CompanyCode"].FirstOrDefault()
-        };
+            // 1) Find existing ACTIVE rows for same candidate OR offer
+            var existingActiveRecords = await _db.PreOnboardings
+                .Where(x =>
+                    (x.ExternalCandidateId == request.External_Candidate_Id
+                     || x.CrisilOfferId == request.Crisil_Offer_Id)
+                    && x.Status == "Active")
+                .ToListAsync(ct);
 
+            // 2) Mark them INACTIVE
+            foreach (var record in existingActiveRecords)
+            {
+                record.Status = "Inactive";
+                record.UpdatedUtc = DateTime.UtcNow;
+                record.UpdatedBy = Request.Headers[_config["Auth:CompanyCodeHeaderName"] ?? "CompanyCode"].FirstOrDefault();
+            }
+
+            // 3) Create new ACTIVE record
+            var entity = new PreOnboardingEntity
+            {
+                ExternalCandidateId = request.External_Candidate_Id!,
+                CrisilOfferId = request.Crisil_Offer_Id!,
+                JoiningStatus = request.Joining_Status,
+                JoiningDate = request.Joining_Date!.Value,
+                FirstName = request.First_Name!,
+                LastName = request.Last_Name!,
+                DateOfBirth = request.Date_Of_Birth!.Value,
+                Gender = request.Gender,
+                Nationality = request.Nationality,
+                PersonalEmail = request.Personal_Email!,
+                MobileCountryCode = request.Mobile_Country_Code,
+                MobileNumber = request.Mobile_Number!,
+
+                Status = "Active",
+
+                AddressJson = request.Address is null ? null : JsonSerializer.Serialize(request.Address),
+                JobJson = request.Job is null ? null : JsonSerializer.Serialize(request.Job),
+                PayJson = request.Pay is null ? null : JsonSerializer.Serialize(request.Pay),
+                KycJson = request.Kyc is null ? null : JsonSerializer.Serialize(request.Kyc),
+                EmergencyContactJson = request.Emergency_Contact is null ? null : JsonSerializer.Serialize(request.Emergency_Contact),
+
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Request.Headers[_config["Auth:CompanyCodeHeaderName"] ?? "CompanyCode"].FirstOrDefault()
+            };
         try
         {
+            // 4) Save changes in single transaction
             _db.PreOnboardings.Add(entity);
             await _db.SaveChangesAsync(ct);
         }
@@ -106,32 +127,63 @@ public sealed class PreOnboardingController : ControllerBase
         return Ok(new
         {
             code = "SUCCESS",
-            message = "Pre-onboarding request saved successfully.",
+            message = "Pre-onboarding request processed successfully.",
             data = new
             {
                 id = entity.Id,
                 external_candidate_id = entity.ExternalCandidateId,
-                crisil_offer_id = entity.CrisilOfferId
+                crisil_offer_id = entity.CrisilOfferId,
+                status = entity.Status
             },
             traceId = HttpContext.TraceIdentifier
         });
+
     }
 
-    // ---------------- GET by Id ----------------
-    [HttpGet("{id:long}")]
-    public async Task<IActionResult> GetById([FromRoute] long id, CancellationToken ct)
+    //// ---------------- GET by Id ----------------
+    //[HttpGet("{id:long}")]
+    //public async Task<IActionResult> GetById([FromRoute] long id, CancellationToken ct)
+    //{
+    //    var (authOk, authResult) = ValidateAuthHeaders();
+    //    if (!authOk) return authResult!;
+
+    //    var entity = await _db.PreOnboardings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+    //    if (entity is null)
+    //    {
+    //        return NotFound(new ApiErrorResponse
+    //        {
+    //            Code = "NOT_FOUND",
+    //            Message = "Record not found.",
+    //            Errors = new() { new ApiFieldError { Field = "id", ErrorCode = "NOT_FOUND", Message = "No record found for the given id." } },
+    //            TraceId = HttpContext.TraceIdentifier
+    //        });
+    //    }
+
+    //    return Ok(new
+    //    {
+    //        code = "SUCCESS",
+    //        message = "Record fetched successfully.",
+    //        data = Map(entity),
+    //        traceId = HttpContext.TraceIdentifier
+    //    });
+    //}
+
+    // ---------------- GET by ExternalCandidateId ----------------
+
+    [HttpGet("{ExternalCandidateId:long}")]
+    public async Task<IActionResult> GetByExternalCandidateId([FromRoute] string externalCandidateId, CancellationToken ct)
     {
         var (authOk, authResult) = ValidateAuthHeaders();
         if (!authOk) return authResult!;
 
-        var entity = await _db.PreOnboardings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        var entity = await _db.PreOnboardings.AsNoTracking().FirstOrDefaultAsync(x => x.ExternalCandidateId == externalCandidateId, ct);
         if (entity is null)
         {
             return NotFound(new ApiErrorResponse
             {
                 Code = "NOT_FOUND",
                 Message = "Record not found.",
-                Errors = new() { new ApiFieldError { Field = "id", ErrorCode = "NOT_FOUND", Message = "No record found for the given id." } },
+                Errors = new() { new ApiFieldError { Field = "ExternalCandidateId", ErrorCode = "NOT_FOUND", Message = "No record found for the given ExternalCandidateId." } },
                 TraceId = HttpContext.TraceIdentifier
             });
         }
