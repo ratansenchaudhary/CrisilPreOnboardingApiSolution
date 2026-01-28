@@ -41,8 +41,12 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
             .NotEmpty().WithErrorCode("REQUIRED").WithMessage("crisil_offer_id is mandatory.")
             .MaximumLength(50).WithErrorCode("MAX_LENGTH").WithMessage("crisil_offer_id max length is 50.");
 
+        //RuleFor(x => x.Joining_Date)
+        //    .NotNull().WithErrorCode("REQUIRED").WithMessage("joining_date is mandatory.");
         RuleFor(x => x.Joining_Date)
-            .NotNull().WithErrorCode("REQUIRED").WithMessage("joining_date is mandatory.");
+            .NotEmpty().WithErrorCode("REQUIRED").WithMessage("joining_date is mandatory.")
+            .Matches(@"^\d{2}-\d{2}-\d{4}$")
+            .WithMessage("joining_date must be in dd-MM-yyyy format");
 
         RuleFor(x => x.First_Name)
             .NotEmpty().WithErrorCode("REQUIRED").WithMessage("first_name is mandatory.")
@@ -52,11 +56,15 @@ public sealed class PreOnboardingRequestValidator : AbstractValidator<PreOnboard
             .NotEmpty().WithErrorCode("REQUIRED").WithMessage("last_name is mandatory.")
             .MaximumLength(100).WithErrorCode("MAX_LENGTH").WithMessage("last_name max length is 100.");
 
+        //RuleFor(x => x.Date_Of_Birth)
+        //    .NotNull().WithErrorCode("REQUIRED").WithMessage("date_of_birth is mandatory.")
+        //    .Must(d => d is null || d.Value < DateOnly.FromDateTime(DateTime.UtcNow))
+        //    .WithErrorCode("INVALID_DATE")
+        //    .WithMessage("date_of_birth must be in the past.");
         RuleFor(x => x.Date_Of_Birth)
-            .NotNull().WithErrorCode("REQUIRED").WithMessage("date_of_birth is mandatory.")
-            .Must(d => d is null || d.Value < DateOnly.FromDateTime(DateTime.UtcNow))
-            .WithErrorCode("INVALID_DATE")
-            .WithMessage("date_of_birth must be in the past.");
+            .NotEmpty().WithErrorCode("REQUIRED").WithMessage("date_of_birth is mandatory.")
+            .Matches(@"^\d{2}-\d{2}-\d{4}$")
+            .WithMessage("date_of_birth must be in dd-MM-yyyy format");
 
         RuleFor(x => x.Personal_Email)
             .NotEmpty().WithErrorCode("REQUIRED").WithMessage("personal_email is mandatory.")

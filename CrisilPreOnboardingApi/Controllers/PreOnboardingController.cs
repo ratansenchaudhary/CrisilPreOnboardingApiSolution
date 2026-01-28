@@ -5,6 +5,7 @@ using CrisilPreOnboardingApi.Models;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using CrisilPreOnboardingApi.Utilities;
 
 namespace CrisilPreOnboardingApi.Controllers;
 
@@ -82,10 +83,10 @@ public sealed class PreOnboardingController : ControllerBase
                 ExternalCandidateId = request.External_Candidate_Id!,
                 CrisilOfferId = request.Crisil_Offer_Id!,
                 JoiningStatus = request.Joining_Status,
-                JoiningDate = request.Joining_Date!.Value,
+                JoiningDate = DateParser.ParseRequired(request.Joining_Date!, "joining_date"),
                 FirstName = request.First_Name!,
                 LastName = request.Last_Name!,
-                DateOfBirth = request.Date_Of_Birth!.Value,
+                DateOfBirth = DateParser.ParseRequired(request.Date_Of_Birth!, "date_of_birth"),
                 Gender = request.Gender,
                 Nationality = request.Nationality,
                 PersonalEmail = request.Personal_Email!,
@@ -120,6 +121,24 @@ public sealed class PreOnboardingController : ControllerBase
                     new ApiFieldError { Field = "external_candidate_id", ErrorCode = "DUPLICATE", Message = "external_candidate_id already used with this crisil_offer_id." },
                     new ApiFieldError { Field = "crisil_offer_id", ErrorCode = "DUPLICATE", Message = "crisil_offer_id already used with this external_candidate_id." }
                 },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+        catch (FormatException ex)
+        {
+            return BadRequest(new ApiErrorResponse
+            {
+                Code = "INVALID_DATE_FORMAT",
+                Message = "Invalid date format.",
+                Errors = new()
+        {
+            new ApiFieldError
+            {
+                Field = "date",
+                ErrorCode = "INVALID_FORMAT",
+                Message = ex.Message
+            }
+        },
                 TraceId = HttpContext.TraceIdentifier
             });
         }
@@ -312,10 +331,10 @@ public sealed class PreOnboardingController : ControllerBase
             External_Candidate_Id = entity.ExternalCandidateId,
             Crisil_Offer_Id = entity.CrisilOfferId,
             Joining_Status = entity.JoiningStatus,
-            Joining_Date = entity.JoiningDate,
+            Joining_Date = ToDdMmYyyy(entity.JoiningDate),
             First_Name = entity.FirstName,
             Last_Name = entity.LastName,
-            Date_Of_Birth = entity.DateOfBirth,
+            Date_Of_Birth = ToDdMmYyyy(entity.DateOfBirth),
             Gender = entity.Gender,
             Nationality = entity.Nationality,
             Personal_Email = entity.PersonalEmail,
@@ -349,4 +368,8 @@ public sealed class PreOnboardingController : ControllerBase
         }
         return new string(chars.ToArray());
     }
+
+    private static string ToDdMmYyyy(DateOnly date)
+    => date.ToString("dd-MM-yyyy");
+
 }

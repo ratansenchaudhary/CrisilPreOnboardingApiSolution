@@ -6,10 +6,10 @@ public sealed class PreOnboardingResponse
     public string External_Candidate_Id { get; set; } = "";
     public string Crisil_Offer_Id { get; set; } = "";
     public string? Joining_Status { get; set; }
-    public DateOnly Joining_Date { get; set; }
+    public string Joining_Date { get; set; }
     public string First_Name { get; set; } = "";
     public string Last_Name { get; set; } = "";
-    public DateOnly Date_Of_Birth { get; set; }
+    public string Date_Of_Birth { get; set; }
     public string? Gender { get; set; }
     public string? Nationality { get; set; }
     public string Personal_Email { get; set; } = "";
