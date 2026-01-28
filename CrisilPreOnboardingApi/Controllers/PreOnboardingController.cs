@@ -62,7 +62,7 @@ public sealed class PreOnboardingController : ControllerBase
         }
 
             // 1) Find existing ACTIVE rows for same candidate OR offer
-            var existingActiveRecords = await _db.PreOnboardings
+            var existingActiveRecords = await _db.CrisilPreOnboardings
                 .Where(x =>
                     (x.ExternalCandidateId == request.External_Candidate_Id
                      || x.CrisilOfferId == request.Crisil_Offer_Id)
@@ -107,7 +107,7 @@ public sealed class PreOnboardingController : ControllerBase
         try
         {
             // 4) Save changes in single transaction
-            _db.PreOnboardings.Add(entity);
+            _db.CrisilPreOnboardings.Add(entity);
             await _db.SaveChangesAsync(ct);
         }
         catch (DbUpdateException)
@@ -195,7 +195,7 @@ public sealed class PreOnboardingController : ControllerBase
         var (authOk, authResult) = ValidateAuthHeaders();
         if (!authOk) return authResult!;
 
-        var entity = await _db.PreOnboardings.AsNoTracking().FirstOrDefaultAsync(x => x.ExternalCandidateId == externalCandidateId, ct);
+        var entity = await _db.CrisilPreOnboardings.AsNoTracking().FirstOrDefaultAsync(x => x.ExternalCandidateId == externalCandidateId, ct);
         if (entity is null)
         {
             return NotFound(new ApiErrorResponse
@@ -235,7 +235,7 @@ public sealed class PreOnboardingController : ControllerBase
         if (pageSize < 1) pageSize = 20;
         if (pageSize > 200) pageSize = 200;
 
-        var q = _db.PreOnboardings.AsNoTracking().AsQueryable();
+        var q = _db.CrisilPreOnboardings.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(externalCandidateId))
             q = q.Where(x => x.ExternalCandidateId == externalCandidateId);

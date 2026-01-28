@@ -6,13 +6,13 @@ public sealed class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<PreOnboardingEntity> PreOnboardings => Set<PreOnboardingEntity>();
+    public DbSet<PreOnboardingEntity> CrisilPreOnboardings => Set<PreOnboardingEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PreOnboardingEntity>(b =>
         {
-            b.ToTable("PreOnboardings");
+            b.ToTable("Crisil_PreOnboardings");
             b.HasKey(x => x.Id);
 
             b.HasIndex(x => new { x.ExternalCandidateId, x.CrisilOfferId }).IsUnique();
